@@ -141,7 +141,11 @@ class ZWaveBaseEntity(Entity):
     @property
     def available(self) -> bool:
         """Return entity availability."""
-        return self.client.connected and bool(self.info.node.ready)
+        return (
+            self.client.connected
+            and bool(self.info.node.ready)
+            and bool(self.info.node.status != 3)
+        )
 
     @callback
     def _value_changed(self, event_data: dict) -> None:

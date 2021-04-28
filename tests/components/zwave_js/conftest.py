@@ -349,6 +349,12 @@ def zem_31_state_fixture():
     return json.loads(load_fixture("zwave_js/zen_31_state.json"))
 
 
+@pytest.fixture(name="dead_node_state", scope="session")
+def dead_node_state_fixture():
+    """Load the dead_node node state fixture data."""
+    return json.loads(load_fixture("zwave_js/dead_node_state.json"))
+
+
 @pytest.fixture(name="client")
 def mock_client_fixture(controller_state, version_state):
     """Mock a client."""
@@ -663,5 +669,13 @@ def vision_security_zl7432_fixture(client, vision_security_zl7432_state):
 def zen_31_fixture(client, zen_31_state):
     """Mock a bulb 6 multi-color node."""
     node = Node(client, copy.deepcopy(zen_31_state))
+    client.driver.controller.nodes[node.node_id] = node
+    return node
+
+
+@pytest.fixture(name="dead_node")
+def dead_node_fixture(client, dead_node_state):
+    """Mock a bulb 6 multi-color node."""
+    node = Node(client, copy.deepcopy(dead_node_state))
     client.driver.controller.nodes[node.node_id] = node
     return node
