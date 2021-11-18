@@ -48,6 +48,8 @@ from .const import DATA_CLIENT, DOMAIN
 from .discovery import ZwaveDiscoveryInfo
 from .entity import ZWaveBaseEntity
 
+ATTR_LAST_KNOWN_BRIGHTNESS = 'last_known_brightness'
+
 LOGGER = logging.getLogger(__name__)
 
 MULTI_COLOR_MAP = {
@@ -124,6 +126,7 @@ class ZwaveLight(ZWaveBaseEntity, LightEntity):
             value_property_key=ColorComponent.COLD_WHITE,
         )
         self._supported_color_modes = set()
+        self._last_known_brightness = None
         self._state = False
         self._update_state()
 
@@ -163,6 +166,11 @@ class ZwaveLight(ZWaveBaseEntity, LightEntity):
         if self.supports_brightness_transition or self.supports_color_transition:
             self._attr_supported_features |= SUPPORT_TRANSITION
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose custom attributes."""
+        return {ATTR_LAST_KNOWN_BRIGHTNESS: self._last_known_brightness}
+
     @callback
     def on_value_update(self) -> None:
         """Call when a watched value is added or updated."""
@@ -186,7 +194,6 @@ class ZwaveLight(ZWaveBaseEntity, LightEntity):
 
     @property
     def is_on(self) -> bool:
-        """Return true if device is on (brightness above 0)."""
         return self._state
 
     @property
@@ -283,7 +290,7 @@ class ZwaveLight(ZWaveBaseEntity, LightEntity):
             await self._async_set_colors(rgbw_channels, transition)
 
         # set brightness
-        await self._async_set_brightness(kwargs.get(ATTR_BRIGHTNESS), transition)
+        await self._async_set_brightness(kwargs.get(ATTR_BRIGHTNESS, self._last_known_brightness), transition)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
@@ -350,6 +357,9 @@ class ZwaveLight(ZWaveBaseEntity, LightEntity):
         self._state = False
         if self.info.primary_value.value is not None:
             self._state = self.info.primary_value.value > 0
+
+        if self.brightness is not None and self.brightness > 0:
+            self._last_known_brightness = self.brightness
 
     @callback
     def _calculate_color_values(self) -> None:
